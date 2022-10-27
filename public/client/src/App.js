@@ -19,7 +19,7 @@ function App() {
   const user = userStore();
 
   const setWebsocketConnection = useCallback(() => {
-    const ws = new WebSocket("wss://c441-82-78-120-187.eu.ngrok.io/socket");
+    const ws = new WebSocket("wss://7192-2a02-2f0e-f613-ea00-6174-b1eb-176e-a5f9.eu.ngrok.io/socket");
     ws.addEventListener("message", receiveMessage);
     setSocket(ws);
   })

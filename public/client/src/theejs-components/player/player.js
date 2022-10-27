@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from "framer-motion-3d";
-import { userStore } from '../../store/store';
 
-export default function Player({ player, ws, noKeyEvents }) {
+export default function Player({ player, noKeyEvents }) {
   // This reference will give us direct access to the mesh
   // Set up state for the hovered and active state
   const [hovered, setHover] = useState(false);
   const [active, setActive] = useState(false);
-  const user = userStore();
 
   useEffect(() => {
     if (!noKeyEvents) {
@@ -37,7 +35,7 @@ export default function Player({ player, ws, noKeyEvents }) {
       player.move({ jump: true });
     }
     if (ev.code === "KeyA") {
-      player.attackAction();
+      player.attackAction(true);
     }
   }
   const playerEventSubscriptionKeyUp = (ev) => {
@@ -48,6 +46,12 @@ export default function Player({ player, ws, noKeyEvents }) {
     if (ev.code === "ArrowRight") {
       player.velocity.x = 0;
       player.unsetPressedKeys({ right: true });
+    }
+    if (ev.code === "ArrowUp") {
+      player.unsetPressedKeys({ jump: true });
+    }
+    if (ev.code === "KeyA") {
+      player.attackAction(false);
     }
   }
 

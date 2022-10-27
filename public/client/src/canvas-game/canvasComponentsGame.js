@@ -41,17 +41,16 @@ export default function CanvasComponents({ ws }) {
         // platformArray.forEach((platform) => intersectObj(platform));
     });
 
-    const intersectObj = (platform) => {
-        playerOp.intersectObjects(platform);
-        player.intersectObjects(platform)
-    }
+    // const intersectObj = (platform) => {
+    //     playerOp.intersectObjects(platform);
+    //     player.intersectObjects(platform)
+    // }
 
     const receiveMessageGame = (data) => {
-        if (data.data.includes(",")) {
-            const playerInfo = data.data.split(",")
-            console.log(playerInfo, playerInfo[2]);
-            if (playerInfo[3] !== user.walletAddress) {
-                playerOp.updatePositionOpponent([playerInfo[0], playerInfo[1]], playerInfo[2]);
+        const playerJSON = JSON.parse(data.data);
+        if (playerJSON.position) {
+            if (playerJSON.walletAddress !== user.walletAddress) {
+                playerOp.updatePositionOpponent([...playerJSON.position], playerJSON.attackAction, playerJSON.keysPressed);
             }
         }
     }

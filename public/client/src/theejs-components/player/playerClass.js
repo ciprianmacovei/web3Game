@@ -2,18 +2,27 @@ import { GRAVITY, RUNNING_MOMENTUM } from '../../constants/constants';
 
 export default class PlayerClass {
 
-    socket;
-    walletAddress;
-    sendPlayerPosition;
-    playerMesh;
-    weaponMesh;
-    gameAspect = [0, 0, 0];
-    bottomGround;
+    //PLAYER ACTIONS
+    position = {
+        Ox: 0,
+        Oy: 0,
+    };
     keysPressed = {
         leftPressed: false,
         rightPressed: false,
     };
     attackBoolean = false;
+
+    //PLAYER DETAILS
+    socket;
+    walletAddress;
+
+    //PLAYER PHYSICS
+    playerMesh;
+    weaponMesh;
+    gameAspect = [0, 0, 0];
+    bottomGround;
+    sendPlayerPosition;
 
     constructor(playerMeshReference, weaponMeshReference, gameAspect, weaponType, ws, walletAddress, sendPlayerPosition) {
         this.width = 1;
@@ -49,18 +58,18 @@ export default class PlayerClass {
             }
             if (x > 0) {
                 this.playerMesh.current.translateX(Number(x) + Number(this.velocity.x));
-                this.sendWsState(Number(x) + Number(this.velocity.x), 0);
+                this.position.Ox = Number(x) + Number(this.velocity.x);
 
             } else {
                 this.playerMesh.current.translateX(Number(x) - Number(this.velocity.x));
-                this.sendWsState(Number(x) - Number(this.velocity.x), 0);
+                this.position.Ox = Number(x) - Number(this.velocity.x);
             }
-
         }
         if (jump) {
+            this.position.Oy = 2;
             this.playerMesh.current.translateY(2);
-            this.sendWsState(0, 2);
         }
+        this.sendWsState();
     }
 
     setPressedKeys = ({ left, right }) => {
@@ -70,26 +79,28 @@ export default class PlayerClass {
         if (right) {
             this.keysPressed.rightPressed = true;
         }
+        this.sendWsState()
     }
 
-    unsetPressedKeys = ({ left, right }) => {
+    unsetPressedKeys = ({ left, right, jump }) => {
         if (left) {
             this.keysPressed.leftPressed = false;
+            this.position.Ox = 0;
         }
         if (right) {
             this.keysPressed.rightPressed = false;
+            this.position.Ox = 0;
+        }
+        if (jump) {
+            this.position.Oy = 0;
         }
         this.velocity.x = 0;
+        this.sendWsState();
     }
 
-    attackAction = () => {
-        const self = this;
-        this.attackBoolean = true;
-        this.sendWsState(0, 0, true);
-        setTimeout(() => {
-            self.attackBoolean = false;
-            self.sendWsState(0, 0, false);
-        }, 400);
+    attackAction = (bool) => {
+        this.attackBoolean = bool;
+        this.sendWsState();
     }
 
     update = () => {
@@ -128,30 +139,26 @@ export default class PlayerClass {
         //ATTACK
     }
 
-    updatePositionOpponent = (poz, attackAction) => {
+    updatePositionOpponent = (poz, attackAction, keypress) => {
         if (poz[0] !== 0) {
-            this.playerMesh.current.translateX(poz[0])
+            this.playerMesh.current.translateX(poz[0]);
         }
         if (poz[1] !== 0) {
-            this.playerMesh.current.translateY(poz[1])
+            this.playerMesh.current.translateY(poz[1]);
         }
-        if (attackAction === "true") {
+        if (keypress) {
+            this.keysPressed = {
+                ...keypress
+            };
+        }
+        if (attackAction === true) {
             this.attackBoolean = true;
-            // if (Number(poz[0]) > 0) {
-            //     this.keysPressed.leftPressed = true;
-            // } else if (Number(poz[0]) < 0) {
-            //     this.keysPressed.rightPressed = true;
-            // } else {
-            //     this.keysPressed.rightPressed = false;
-            //     this.keysPressed.leftPressed = false;
-            // }
         }
-        if (attackAction === "false") {
+        if (attackAction === false) {
             this.attackBoolean = false;
-            // this.keysPressed.rightPressed = false;
-            // this.keysPressed.leftPressed = false;
         }
-        console.log("opponent position ", poz, "keypress", this.keysPressed);
+
+        console.log("opponent position ", poz, "keypress", keypress, attackAction);
 
     }
 
@@ -167,15 +174,16 @@ export default class PlayerClass {
         }
     }
 
-    sendWsState(Ox, Oy, attack) {
+    sendWsState() {
         if (this.socket && this.sendPlayerPosition) {
             this.socket.send(
                 JSON.stringify(
                     {
-                        position: [Ox, Oy],
+                        position: [this.position.Ox, this.position.Oy],
+                        keysPressed: this.keysPressed,
                         type: "position",
                         walletAddress: this.walletAddress,
-                        attackAction: attack
+                        attackAction: this.attackBoolean
                     }
                 )
             );

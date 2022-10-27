@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -36,10 +35,11 @@ type ConnectionBattleChamber struct {
 	ArrayOfPendingUsers []User
 }
 
-type PlayerPositionGrabberJSON struct {
+type PlayerGrabberJSON struct {
 	Position      [2]float64 `json:"position"`
 	WalletAddress string     `json:"walletAddress"`
 	AttackAction  bool       `json:"attackAction"`
+	KeysPressed   any        `json:"keysPressed"`
 }
 
 const (
@@ -68,7 +68,6 @@ func WsEndpoints(w http.ResponseWriter, r *http.Request) {
 	}
 
 	myConnection := ConnectionTypeJSON{}
-
 	for {
 		messageType, message, err := wsConn.ReadMessage()
 		if err != nil {
@@ -96,15 +95,17 @@ func WsEndpoints(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			} else if myConnection.ConnectionType == Position {
-				playerPosition := PlayerPositionGrabberJSON{}
-				errorParseJson := json.Unmarshal(messageBytes, &playerPosition)
+				player := PlayerGrabberJSON{}
+				errorParseJson := json.Unmarshal(messageBytes, &player)
 				if errorParseJson != nil {
 					log.Println("Error unwrapping position json ", errorParseJson)
 				} else {
 					for _, user := range connectionBattlePool {
-						if user.WalletAddress != playerPosition.WalletAddress {
-							stringPosition := fmt.Sprintf("%f,%f,%v,%s", playerPosition.Position[0], playerPosition.Position[1], playerPosition.AttackAction, playerPosition.WalletAddress)
-							err := user.conn.WriteMessage(messageType, []byte(stringPosition))
+						if user.WalletAddress != player.WalletAddress {
+							// log.Println(player)
+							// stringPosition := fmt.Sprintf("%f,%f,%v,%s", player.Position[0], player.Position[1], player.AttackAction, player.WalletAddress)
+							// err := user.conn.WriteMessage(messageType, []byte(stringPosition))
+							err := user.conn.WriteJSON(player)
 							if err != nil {
 								log.Println("Error on sending back the position", err)
 							} else {
